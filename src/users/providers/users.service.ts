@@ -1,15 +1,26 @@
 /* eslint-disable prettier/prettier */
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { GetUsersParamDto } from '../dtos/get-users-param.dto';
+import { AuthService } from 'src/auth/providers/auth.service';
 
 @Injectable()
 export class UsersService {
 
+	constructor(
+		//Injecting Auth Service
+		@Inject(forwardRef(() => AuthService))
+		private readonly authService: AuthService,
+	) { 
+
+	}
 	public findAll(
 		getUserParamDto: GetUsersParamDto,
 		limit: number,
 		page: number,
 	){
+		//Auth Service
+		const isAuth = this.authService.isAuth();
+		console.log(isAuth);
 		
 		return [
 		{
@@ -27,7 +38,7 @@ export class UsersService {
 	 * Find a user by ID
 	 */
 
-	public findOneByID(id: number) {
+	public findOneByID(id: string) {
 		return {
 			id: 1234,
 			firstName : "John",
