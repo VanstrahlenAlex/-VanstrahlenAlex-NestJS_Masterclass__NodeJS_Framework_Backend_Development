@@ -1,7 +1,12 @@
 /* eslint-disable prettier/prettier */
 
-import { Injectable } from '@nestjs/common';
+import { Body, Injectable } from '@nestjs/common';
 import { UsersService } from 'src/users/providers/users.service';
+import { CreatePostDto } from '../dtos/create-post.dto';
+import { Repository } from 'typeorm';
+import { Post } from '../post.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { MetaOption } from 'src/meta-options/meta-option.entity';
 
 @Injectable()
 export class PostsService {
@@ -10,8 +15,30 @@ export class PostsService {
 		 * Injecting Users Service
 		 */
 		private readonly usersService: UsersService,
-	) { 
+		//Inject postRepository
+		@InjectRepository(Post)
+		private readonly postRepository: Repository<Post>,
 
+		//inject metaOptionsRepository
+		@InjectRepository(MetaOption)
+		public readonly metaOptionsRepository: Repository<MetaOption>,
+	) {}
+
+	public async create(@Body() createPostDto :CreatePostDto) {
+		//Create MetaOptions
+		let metaOptions =createPostDto.metaOptions ?  this.metaOptionsRepository.create(createPostDto.metaOptions) : null;
+
+		if(metaOptions){
+			await this.metaOptionsRepository.save(metaOptions);
+		}
+		//Create Post
+		let post = this.postRepository.create(createPostDto);
+		//Add MetaOptions to the post 
+		if(metaOptions){
+			post.metaOptions = metaOptions;
+		}
+		//Return the post
+		return await this.postRepository.save(post);
 	}
 	public findAll(userId: string){
 		// Users Service

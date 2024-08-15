@@ -1,12 +1,11 @@
 /* eslint-disable prettier/prettier */
 
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsJSON, IsNotEmpty } from "class-validator";
 
 export class CreatePostMetaOptionsDto {
 
 	@IsNotEmpty()
+	@IsJSON()
 	metaValue: string;
 
-	@IsNotEmpty()
-	value: any;
 }
