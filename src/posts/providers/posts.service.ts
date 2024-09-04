@@ -17,7 +17,7 @@ export class PostsService {
 		private readonly usersService: UsersService,
 		//Inject postRepository
 		@InjectRepository(Post)
-		private readonly postRepository: Repository<Post>,
+		private readonly postsRepository: Repository<Post>,
 
 		//inject metaOptionsRepository
 		@InjectRepository(MetaOption)
@@ -32,30 +32,49 @@ export class PostsService {
 			await this.metaOptionsRepository.save(metaOptions);
 		}
 		//Create Post
-		let post = this.postRepository.create(createPostDto);
+		let post = this.postsRepository.create(createPostDto);
 		//Add MetaOptions to the post 
 		if(metaOptions){
 			post.metaOptions = metaOptions;
 		}
 		//Return the post
-		return await this.postRepository.save(post);
+		return await this.postsRepository.save(post);
 	}
-	public findAll(userId: string){
+	public async findAll(userId: string){
 		// Users Service
 		// Find A User
 		const user = this.usersService.findOneByID(userId);
-		return [
-			{
-				user: user,
-				title: 'Test Tile',
-				content: 'Test Content',
-			},
-			{
-				user: user,
-				title: 'Test Tile 2',
-				content: 'Test Content 2',
+		let posts = await this.postsRepository.find({
+			relations: {
+				metaOptions: true,
 			}
-		]
+		})
+
+		return posts;
+		// return [
+		// 	{
+		// 		user: user,
+		// 		title: 'Test Tile',
+		// 		content: 'Test Content',
+		// 	},
+		// 	{
+		// 		user: user,
+		// 		title: 'Test Tile 2',
+		// 		content: 'Test Content 2',
+		// 	}
+		// ]
 		
+	}
+
+	public async delete(id: number){
+		//Find the post
+		let post = await this.postsRepository.findOneBy({ id });
+		//Deleting the post 
+		await this.postsRepository.delete(id);
+
+		//Delete meta options
+		await this.metaOptionsRepository.delete(post.metaOptions.id)
+		//Confirmation 
+		return { deleted: true, id}
 	}
 }
