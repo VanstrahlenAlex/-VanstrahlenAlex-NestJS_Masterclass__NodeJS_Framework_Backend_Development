@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { postStatus } from "../enums/postStatus.enum";
 import { postType } from "../enums/postType.enum";
-import { IsArray, IsEnum, IsISO8601, IsJSON, IsNotEmpty, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength, ValidateNested } from "class-validator";
+import { IsArray, IsEnum, IsInt, IsISO8601, IsJSON,  IsNotEmpty, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength, ValidateNested } from "class-validator";
 import { CreatePostMetaOptionsDto } from "../../meta-options/dtos/create-post-meta-options.dto";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -75,14 +75,13 @@ export class CreatePostDto {
 	publishOn?: Date;
 
 	@ApiPropertyOptional({
-		description: "This is the excerpt of the blog post",
-		example: ['nestjs', 'typescript']
+		description: "Array of ids of tags",
+		example: [1, 2]
 	})
 	@IsOptional()
 	@IsArray()
-	@IsString({ each: true })
-	@MinLength(3, { each: true})
-	tags?: string[];
+	@IsInt({ each: true })
+	tags?: number[];
 
 	@ApiPropertyOptional({
 		type: "object",
@@ -103,5 +102,16 @@ export class CreatePostDto {
 	@IsArray()
 	@ValidateNested({ each: true })
 	@Type(() => CreatePostMetaOptionsDto)
-	metaOptions: CreatePostMetaOptionsDto[]
+	metaOptions: CreatePostMetaOptionsDto | null;
+
+	@ApiProperty({
+		type: 'integer',
+		required: true,
+		example: 1,
+	})
+	@IsNotEmpty()
+	@IsInt()
+	authorId: number; 
+
+
 }

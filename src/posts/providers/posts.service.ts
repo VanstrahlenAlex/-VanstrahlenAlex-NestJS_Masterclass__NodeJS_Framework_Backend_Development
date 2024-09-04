@@ -7,6 +7,8 @@ import { Repository } from 'typeorm';
 import { Post } from '../post.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MetaOption } from 'src/meta-options/meta-option.entity';
+import { TagsService } from 'src/tags/providers/tags.service';
+import { PatchPostDto } from '../dtos/patch-post.dto';
 
 @Injectable()
 export class PostsService {
@@ -21,18 +23,30 @@ export class PostsService {
 
 		//inject metaOptionsRepository
 		@InjectRepository(MetaOption)
-		public readonly metaOptionsRepository: Repository<MetaOption>,
+		private readonly metaOptionsRepository: Repository<MetaOption>,
+		/**
+		 * Inject TagsService
+		 */
+		private readonly tagsService: TagsService,
 	) {}
 
 	public async create(@Body() createPostDto :CreatePostDto) {
-		//Create MetaOptions
-		let metaOptions =createPostDto.metaOptions ?  this.metaOptionsRepository.create(createPostDto.metaOptions) : null;
+		//Find author from database based on authorId
+		let author = await this.usersService.findOneById(createPostDto.authorId);
 
-		if(metaOptions){
-			await this.metaOptionsRepository.save(metaOptions);
-		}
+		let tags = await this.tagsService.findMultipleTags(createPostDto.tags);
+		//Create MetaOptions
+		// let metaOptions =createPostDto.metaOptions ?  this.metaOptionsRepository.create(createPostDto.metaOptions) : null;
+
+		// if(metaOptions){
+		// 	await this.metaOptionsRepository.save(metaOptions);
+		// }
 		//Create Post
-		let post = this.postsRepository.create(createPostDto);
+		let post = this.postsRepository.create({
+			...createPostDto,
+			author: author,
+			tags: tags,
+		});
 		//Add MetaOptions to the post 
 		if(metaOptions){
 			post.metaOptions = metaOptions;
@@ -41,12 +55,11 @@ export class PostsService {
 		return await this.postsRepository.save(post);
 	}
 	public async findAll(userId: string){
-		// Users Service
-		// Find A User
-		const user = this.usersService.findOneByID(userId);
+
 		let posts = await this.postsRepository.find({
 			relations: {
 				metaOptions: true,
+				author: true,
 			}
 		})
 
@@ -65,15 +78,32 @@ export class PostsService {
 		// ]
 		
 	}
+	public async update(patchPostsDto: PatchPostDto){
+		//Find the Tags
+		let tags = await this.tagsService.findMultipleTags(patchPostsDto.tags);
+		//Find the Post 
+		let post = await this.postsRepository.findOneBy({
+			id: patchPostsDto.id,
+		})
+		// Update the properties
+		post.title = patchPostsDto.title ?? post.title; // { ...post, ...patchPostsDto }
+        post.content = patchPostsDto.content ?? post.content;
+        post.status = patchPostsDto.status ?? post.status;
+        post.postType = patchPostsDto.postType ?? post.postType;
+        post.slug = patchPostsDto.slug ?? post.slug;
+        post.featuredImageUrl = patchPostsDto.featuredImageUrl ?? post.featuredImageUrl;
+        post.publishOn = patchPostsDto.publishOn ?? post.publishOn;
+        post.schema = patchPostsDto.schema;
+		//Assign the new tags 
+        post.tags = tags;
+
+		//Save the post and return 
+		return await this.postsRepository.save(post)
+	}
 
 	public async delete(id: number){
-		//Find the post
-		let post = await this.postsRepository.findOneBy({ id });
-		//Deleting the post 
 		await this.postsRepository.delete(id);
 
-		//Delete meta options
-		await this.metaOptionsRepository.delete(post.metaOptions.id)
 		//Confirmation 
 		return { deleted: true, id}
 	}
