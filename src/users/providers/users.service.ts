@@ -6,6 +6,7 @@ import { User } from '../user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateUserDto } from '../dtos/create-user.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UsersService {
@@ -14,7 +15,10 @@ export class UsersService {
 		//Injecting usersRepository
 		@InjectRepository(User)
         
-		private usersRepository: Repository<User>
+		private usersRepository: Repository<User>,
+
+		/**Injecting ConfigService */
+		private readonly configService: ConfigService,
 	) { 
 
 	}
@@ -38,6 +42,8 @@ export class UsersService {
 	){
 		// Remove Auth Service check as it's not available in this context
 		
+		const environment = this.configService.get<string>('S3_BUCKET');
+
 		return [
 		{
 			firstName: "John",
